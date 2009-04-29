@@ -42,12 +42,6 @@ class BasicModel
       full_url_to_database = "http://localhost:5984/#{database_name}"
     end
     database = CouchRest.database!(full_url_to_database)
-    if Rails.env == 'development'
-      # Synchronize views in development.
-      # Assumes existence of "couchdb_views" directory.
-      file_manager = CouchRest::FileManager.new(File.basename(full_url_to_database))
-      file_manager.push_views(File.join(Rails.root, "couchdb_views"))
-    end
     database
   end
 
@@ -111,7 +105,7 @@ class BasicModel
     end
     self.updated_at = Time.now
     self.on_update if self.respond_to?(:on_update)
-    result = self.class.db(@database_name).save(@attributes)
+    result = self.class.db(@database_name).save_doc(@attributes)
     self._rev = result['rev']
     self
   end
@@ -155,7 +149,7 @@ class BasicModel
 
   def handle_attachments
     # Save an attachment
-    if @attributes['attachment'].is_a?(ActionController::UploadedTempfile)
+    if @attributes['attachment'].is_a?(Tempfile)
       attachment = @attributes.delete("attachment")
       @attributes["_attachments"] ||= {}
       filename = File.basename(attachment.original_filename)
